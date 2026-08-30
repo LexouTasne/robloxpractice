@@ -192,15 +192,15 @@ local function mkSlider(parent, y, title, minV, maxV, decimals, suffix, val, onC
 	end
 	thumb.InputBegan:Connect(beginDrag) rail.InputBegan:Connect(beginDrag)
 	thumb.InputEnded:Connect(endDrag) rail.InputEnded:Connect(endDrag)
-	P:GetService("UserInputService").InputChanged:Connect(function(input)
+	game:GetService("UserInputService").InputChanged:Connect(function(input)
 		if dragging and (input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch) then dragTo(input.Position) end
 	end)
-	P:GetService("UserInputService").InputEnded:Connect(function(input) if dragging then endDrag(input) end end)
+	game:GetService("UserInputService").InputEnded:Connect(function(input) if dragging then endDrag(input) end end)
 	update((val-minV)/(maxV-minV))
 	return {set=setByValue,get=function() return minV+(fill.Size.X.Scale)*(maxV-minV) end}
 end
 
-local UserInputService=P:GetService("UserInputService")
+local UserInputService=game:GetService("UserInputService")
 local RunService=game:GetService("RunService")
 local player=P.LocalPlayer
 
