@@ -1,0 +1,2 @@
+-- MainUI Loader - cole esta unica linha no Solara
+loadstring(game:HttpGet("https://raw.githubusercontent.com/s4guadin/robloxpractice/main/MainUI.lua"))()
