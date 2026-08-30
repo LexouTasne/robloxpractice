@@ -321,17 +321,7 @@ RunService.Heartbeat:Connect(function()
 	if SET.noclipEnabled and char and humanoid then noclipping(char) end
 end)
 
--- Aimbot (com lock-on: gruda no alvo e so troca quando a mira sai dele)
-local aimLock=nil
-
-local function getHead(t)
-	return t:FindFirstChild("Head") or t.PrimaryPart
-end
-local function angleTo(camPos,camLook,pos)
-	local dir=(pos-camPos).Unit
-	return math.deg(math.acos(math.clamp(camLook:Dot(dir),-1,1)))
-end
-
+-- Aimbot (segue a mira: gruda em quem voce apontar e troca ao mirar em outro)
 RunService.RenderStepped:Connect(function()
 	if not SET.aimbotEnabled then return end
 	local cam=workspace.CurrentCamera
@@ -340,40 +330,17 @@ RunService.RenderStepped:Connect(function()
 	if not (cam and root) then return end
 	local camPos=cam.CFrame.Position
 	local camLook=cam.CFrame.LookVector
-	local targets=getTargets()
-
-	-- Se ja esta travado em alguem
-	if aimLock and aimLock.Parent then
-		local hd=getHead(aimLock)
-		if hd then
-			local ang=angleTo(camPos,camLook,hd.Position)
-			-- Mantem o alvo enquanto estiver "na mira" (FOV)
-			if ang<=SET.aimFOV then
-				cam.CFrame=cam.CFrame:Lerp(CFrame.lookAt(camPos,hd.Position),1/(math.max(SET.aimSmooth,1)+1))
-				return
-			else
-				aimLock=nil -- tirou a mira -> solta
-			end
-		else
-			aimLock=nil
-		end
-	end
-
-	-- Procura novo alvo mais proximo dentro do FOV
-	local best,bestDist,bestHead=nil,SET.aimFOV,nil
-	for _,t in ipairs(targets) do
-		local hd=getHead(t)
+	local best,bestAng=nil,SET.aimFOV
+	for _,t in ipairs(getTargets()) do
+		local hd=t:FindFirstChild("Head") or t.PrimaryPart
 		if hd then
 			local hp=hd.Position
-			local ang=angleTo(camPos,camLook,hp)
-			if ang<=bestDist then
-				local dist=(camPos-hp).Magnitude
-				if not best or dist<best then best=hp bestDist=ang bestHead=t end
-			end
+			local dir=(hp-camPos).Unit
+			local ang=math.deg(math.acos(math.clamp(camLook:Dot(dir),-1,1)))
+			if ang<=bestAng then best=hp bestAng=ang end
 		end
 	end
 	if best then
-		aimLock=bestHead
 		local alpha=1/(math.max(SET.aimSmooth,1)+1)
 		cam.CFrame=cam.CFrame:Lerp(CFrame.lookAt(camPos,best),alpha)
 	end
