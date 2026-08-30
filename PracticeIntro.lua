@@ -437,17 +437,22 @@ task.wait(MOVE)
 rev.Size=UDim2.fromOffset(0,80)
 wipe.Visible=false
 
--- LOAD
+-- LOAD (nao-bloqueante, com timeout de seguranca)
 plus.Rotation=0
-Q(plus,D(LOAD),{Rotation=360*TURNS},Enum.EasingStyle.Linear).Completed:Wait()
+local loadTw=Q(plus,D(LOAD),{Rotation=360*TURNS},Enum.EasingStyle.Linear)
+task.wait(D(LOAD)+.3)
 plus.Rotation=0
 
--- MENU
-Q(logo,D(.14),{GroupTransparency=1},Enum.EasingStyle.Quad,Enum.EasingDirection.In)
-Q(sc,D(.12),{Scale=.98},Enum.EasingStyle.Quad)
-Q(win,D(.38),{Size=UDim2.fromOffset(MW,MH)},Enum.EasingStyle.Quint).Completed:Wait()
-logo.Visible=false
-for _,c in ipairs(corners)do c[1].Visible=false end
-menu.Visible=true
-Q(sc,D(.22),{Scale=1})
-Q(menu,D(.28),{GroupTransparency=0},Enum.EasingStyle.Quad)
+-- MENU (abre via coroutine para nunca travar a GUI)
+task.spawn(function()
+	Q(logo,D(.14),{GroupTransparency=1},Enum.EasingStyle.Quad,Enum.EasingDirection.In)
+	Q(sc,D(.12),{Scale=.98},Enum.EasingStyle.Quad)
+	local winTw=Q(win,D(.38),{Size=UDim2.fromOffset(MW,MH)},Enum.EasingStyle.Quint)
+	-- espera o tween OU um tempo maximo, o que vier primeiro
+	task.wait(D(.38)+.2)
+	logo.Visible=false
+	for _,c in ipairs(corners)do c[1].Visible=false end
+	menu.Visible=true
+	Q(sc,D(.22),{Scale=1})
+	Q(menu,D(.28),{GroupTransparency=0},Enum.EasingStyle.Quad)
+end)
