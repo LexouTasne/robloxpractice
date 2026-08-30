@@ -258,6 +258,19 @@ local function refreshESP()
 end
 
 -- Fly (via BodyVelocity + gravidade desligada - levita e se move por impulso)
+-- Nota: alguns executores/jogos nao tem todos os estados do enum; usa pcall p/ nao quebrar
+local HST=Enum.HumanoidStateType
+local function hstSafe(name)
+	local ok,v=pcall(function() return HST[name] end)
+	return ok and v or nil
+end
+local S_FALL=hstSafe("Falling")
+local S_JUMP=hstSafe("Jumping")
+local function setState(h,s,en)
+	if not s then return end
+	pcall(function() h:SetStateEnabled(s,en) end)
+end
+
 local flyBody=nil
 local function ensureFlyBody(root)
 	if flyBody and flyBody.Parent==root then return end
@@ -275,8 +288,8 @@ local function toggleFly(on)
 		local char=player.Character
 		local h=char and char:FindFirstChildOfClass("Humanoid")
 		if h then
-			h:SetStateEnabled(Enum.HumanoidStateType.Falling,true)
-			h:SetStateEnabled(Enum.HumanoidStateType.Jumping,true)
+			setState(h,S_FALL,true)
+			setState(h,S_JUMP,true)
 		end
 	end
 end
@@ -297,8 +310,8 @@ RunService.Heartbeat:Connect(function()
 	local root=char and char:FindFirstChild("HumanoidRootPart")
 	if SET.flyEnabled and root and humanoid then
 		ensureFlyBody(root)
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Falling,false)
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping,false)
+		setState(humanoid,S_FALL,false)
+		setState(humanoid,S_JUMP,false)
 		local up=0
 		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then up=1 end
 		if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then up=-1 end
@@ -316,8 +329,8 @@ RunService.Heartbeat:Connect(function()
 	elseif flyBody and flyBody.Parent and flyBody.Parent.Parent==char then
 		flyBody:Destroy() flyBody=nil
 		if humanoid then
-			humanoid:SetStateEnabled(Enum.HumanoidStateType.Falling,true)
-			humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping,true)
+			setState(humanoid,S_FALL,true)
+			setState(humanoid,S_JUMP,true)
 		end
 	end
 	if SET.noclipEnabled and char and humanoid then noclipping(char) end
