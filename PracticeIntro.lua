@@ -57,7 +57,11 @@ local function mkPlus()
 	im:WritePixelsBuffer(Vector2.zero,Vector2.new(w,h),b)return im
 end
 
-local PI,LI=mkP(),mkPlus()
+local PI,LI
+local okA,errA=pcall(function()PI=mkP()end)
+if not okA then warn("ESP mkP falhou: "..tostring(errA)) end
+local okB,errB=pcall(function()LI=mkPlus()end)
+if not okB then warn("ESP mkPlus falhou: "..tostring(errB)) end
 local gui=N("ScreenGui",{Name="PracticeIntro",Parent=pg,IgnoreGuiInset=true,ResetOnSpawn=false,DisplayOrder=999999})
 local win=N("CanvasGroup",{Parent=gui,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),Size=UDim2.fromOffset(WW,WH),BackgroundColor3=BG,BorderSizePixel=0,GroupTransparency=1})
 R(win,10)N("UIStroke",{Parent=win,Color=BD,Transparency=.4,Thickness=1})
@@ -76,11 +80,11 @@ N("TextLabel",{Parent=rev,Size=UDim2.fromOffset(TW+6,80),BackgroundTransparency=
 local wipe=N("Frame",{Parent=logo,AnchorPoint=Vector2.new(0,.5),Position=UDim2.fromOffset(TX-10,CY),Size=UDim2.fromOffset(WIPE,88),BackgroundColor3=BG,BorderSizePixel=0,Rotation=WA,ZIndex=4})
 
 local p=N("ImageLabel",{Parent=logo,AnchorPoint=Vector2.new(.5,.5),Position=IP,Size=UDim2.fromOffset(PW,PH),BackgroundTransparency=1,ImageTransparency=1,ScaleType=Enum.ScaleType.Fit,Rotation=ROT,ZIndex=5})
-p.ImageContent=Content.fromObject(PI)
+if PI then pcall(function()p.ImageContent=Content.fromObject(PI)end) end
 
 local ph=N("Frame",{Parent=logo,AnchorPoint=Vector2.new(.5,.5),Position=IL,Size=UDim2.fromOffset(PS,PS),BackgroundTransparency=1,ZIndex=5})
 local plus=N("ImageLabel",{Parent=ph,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),Size=UDim2.fromScale(1,1),BackgroundTransparency=1,ImageTransparency=1,ScaleType=Enum.ScaleType.Fit,ZIndex=5})
-plus.ImageContent=Content.fromObject(LI)
+if LI then pcall(function()plus.ImageContent=Content.fromObject(LI)end) end
 
 -- SHINE
 local fx=N("Frame",{Parent=logo,Size=UDim2.fromScale(1,1),BackgroundTransparency=1,ClipsDescendants=true,ZIndex=7})
