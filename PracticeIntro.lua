@@ -260,8 +260,9 @@ end
 local function isEnemy(char)
 	local pl=P:GetPlayerFromCharacter(char)
 	if not pl then return true end
-	if player.Team and pl.Team and player.Team~=pl.Team and player.Neutral==false and pl.Neutral==false then return true end
-	return false
+	local myT,plT=player.Team,pl.Team
+	if myT and plT and not player.Neutral and not pl.Neutral then return myT~=plT end
+	return true
 end
 local function espColorFor(char,base)
 	if SET.espTeamColor then
