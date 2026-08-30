@@ -1,9 +1,9 @@
 --[[==========================================================================
-	MainUI - Hub com abas (Main / Pulo / Velocidade) - LocalScript
+	MainUI - Hub com abas (Main / Pulo / Jogador) - LocalScript
 
 	Criado 100% por codigo. O script cria:
 	  - Um botao flutuante circular no canto inferior direito
-	  - Um hub com abas laterais: MAIN | PULO | VELOCIDADE
+	  - Um hub com abas laterais: MAIN | PULO | JOGADOR
 	  Cada aba abre uma "janela" interna com seus proprios controles.
 
 	ONDE COLOCAR:
@@ -32,19 +32,15 @@ if old then
 	old:Destroy()
 end
 
-local DEFAULT_WALKSPEED = 16
 local DEFAULT_JUMPPOWER = 50
 
 ---------------------------------------------------------------------------
 -- Estado das configuracoes
 ---------------------------------------------------------------------------
 local settings = {
-	wsEnabled = false,
-	wsValue = DEFAULT_WALKSPEED,
 	jpEnabled = false,
 	jpValue = DEFAULT_JUMPPOWER,
 	fovValue = 70,
-	infiniteJump = false,
 
 	espEnabled = false,
 	espTeamColor = true,
@@ -68,9 +64,6 @@ local function applySettings(character)
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if not humanoid then
 		return
-	end
-	if settings.wsEnabled then
-		humanoid.WalkSpeed = settings.wsValue
 	end
 	if settings.jpEnabled then
 		humanoid.JumpPower = settings.jpValue
@@ -265,7 +258,7 @@ local function createUI()
 	end)
 
 	-------------------------------------------------------------
-	-- 3. BARRA LATERAL DE ABAS (MAIN | PULO | VELOCIDADE)
+	-- 3. BARRA LATERAL DE ABAS (MAIN | PULO | JOGADOR)
 	-------------------------------------------------------------
 	local sidebar = Instance.new("Frame")
 	sidebar.BackgroundColor3 = Theme.background
@@ -625,11 +618,9 @@ local function createUI()
 	-------------------------------------------------------------
 	local mainPanel = makePanel()
 	local jumpPanel = makePanel()
-	local speedPanel = makePanel()
 	local playerPanel = makePanel()
 	panels.main = mainPanel
 	panels.jump = jumpPanel
-	panels.speed = speedPanel
 	panels.player = playerPanel
 
 	-- === ABA MAIN ===
@@ -646,24 +637,16 @@ local function createUI()
 
 	-- Botao restaurar padroes
 	addActionButton(mainPanel, "Restaurar padroes", 3, function()
-		settings.wsEnabled = false
-		settings.wsValue = DEFAULT_WALKSPEED
 		settings.jpEnabled = false
 		settings.jpValue = DEFAULT_JUMPPOWER
-		settings.infiniteJump = false
 		settings.fovValue = 70
 
-		wsToggle.setState(false)
 		jpToggle.setState(false)
-		infToggle.setState(false)
-
-		wsSlider.setByValue(DEFAULT_WALKSPEED)
 		jpSlider.setByValue(DEFAULT_JUMPPOWER)
 		fovSlider.setByValue(70)
 
 		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 		if humanoid then
-			humanoid.WalkSpeed = DEFAULT_WALKSPEED
 			humanoid.JumpPower = DEFAULT_JUMPPOWER
 		end
 		local cam = workspace.CurrentCamera
@@ -690,31 +673,6 @@ local function createUI()
 		if settings.jpEnabled then
 			local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 			if humanoid then humanoid.JumpPower = value end
-		end
-	end, 3)
-
-	infToggle = addToggle(jumpPanel, "Pulo infinito", "Salte repetidamente no ar", 4, function(on)
-		settings.infiniteJump = on
-	end)
-
-	-- === ABA VELOCIDADE ===
-	addSectionTitle(speedPanel, "VELOCIDADE", 1)
-
-	wsToggle = addToggle(speedPanel, "Velocidade personalizada", "Liga o controle deslizante de WalkSpeed", 2, function(on)
-		settings.wsEnabled = on
-		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-		if on then
-			if humanoid then humanoid.WalkSpeed = settings.wsValue end
-		else
-			if humanoid then humanoid.WalkSpeed = DEFAULT_WALKSPEED end
-		end
-	end)
-
-	wsSlider = addSlider(speedPanel, "Velocidade (WalkSpeed)", 1, 100, 0, "ws", settings.wsValue, function(value)
-		settings.wsValue = value
-		if settings.wsEnabled then
-			local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-			if humanoid then humanoid.WalkSpeed = value end
 		end
 	end, 3)
 
@@ -787,29 +745,14 @@ local function createUI()
 
 	addTab("Main", 1, mainPanel)
 	addTab("Pulo", 2, jumpPanel)
-	addTab("Velocidade", 3, speedPanel)
-	addTab("Jogador", 4, playerPanel)
+	addTab("Jogador", 3, playerPanel)
 
 	-- Abre na aba Main
 	switchPanel(mainPanel)
 	styleTab(tabButtons.Main, true)
 
 	-------------------------------------------------------------
-	-- 7. PULO INFINITO (responde ao botao de pular do jogador)
-	-------------------------------------------------------------
-	UserInputService.JumpRequest:Connect(function()
-		if not settings.infiniteJump then return end
-		local humane = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-		if not humane then return end
-		local st = humane:GetState()
-		if st == Enum.HumanoidStateType.Jumping or st == Enum.HumanoidStateType.Freefall then
-			return
-		end
-		humane:ChangeState(Enum.HumanoidStateType.Jumping)
-	end)
-
-	-------------------------------------------------------------
-	-- 8. ABRIR / FECHAR COM ANIMACAO
+	-- 7. ABRIR / FECHAR COM ANIMACAO
 	-------------------------------------------------------------
 	local mainOpen = false
 

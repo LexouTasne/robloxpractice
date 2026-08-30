@@ -9,8 +9,8 @@ Criado como script executável em um executor/exploit de client.
 - Botão flutuante circular para abrir/fechar o hub
 - 3 abas no menu lateral:
   - **Main** — Campo de visão (FOV) + restaurar padrões
-  - **Pulo** — JumpPower personalizado, pulo infinito
-  - **Velocidade** — WalkSpeed personalizado
+  - **Pulo** — JumpPower personalizado
+  - **Jogador** — ESP, aimbot, fly, noclip
 - Controles com suporte a mouse e toque
 - Janela arrastável
 - Configurações reaplicadas após o personagem renascer
