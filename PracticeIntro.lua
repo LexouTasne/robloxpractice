@@ -321,7 +321,17 @@ RunService.Heartbeat:Connect(function()
 	if SET.noclipEnabled and char and humanoid then noclipping(char) end
 end)
 
--- Aimbot
+-- Aimbot (com lock-on: gruda no alvo e so troca quando a mira sai dele)
+local aimLock=nil
+
+local function getHead(t)
+	return t:FindFirstChild("Head") or t.PrimaryPart
+end
+local function angleTo(camPos,camLook,pos)
+	local dir=(pos-camPos).Unit
+	return math.deg(math.acos(math.clamp(camLook:Dot(dir),-1,1)))
+end
+
 RunService.RenderStepped:Connect(function()
 	if not SET.aimbotEnabled then return end
 	local cam=workspace.CurrentCamera
@@ -329,23 +339,43 @@ RunService.RenderStepped:Connect(function()
 	local root=char and char:FindFirstChild("HumanoidRootPart")
 	if not (cam and root) then return end
 	local camPos=cam.CFrame.Position
-	local best,bestDist=nil,SET.aimFOV
-	for _,t in ipairs(getTargets()) do
-		local hd=t:FindFirstChild("Head") or t.PrimaryPart
+	local camLook=cam.CFrame.LookVector
+	local targets=getTargets()
+
+	-- Se ja esta travado em alguem
+	if aimLock and aimLock.Parent then
+		local hd=getHead(aimLock)
+		if hd then
+			local ang=angleTo(camPos,camLook,hd.Position)
+			-- Mantem o alvo enquanto estiver "na mira" (FOV)
+			if ang<=SET.aimFOV then
+				cam.CFrame=cam.CFrame:Lerp(CFrame.lookAt(camPos,hd.Position),1/(math.max(SET.aimSmooth,1)+1))
+				return
+			else
+				aimLock=nil -- tirou a mira -> solta
+			end
+		else
+			aimLock=nil
+		end
+	end
+
+	-- Procura novo alvo mais proximo dentro do FOV
+	local best,bestDist,bestHead=nil,SET.aimFOV,nil
+	for _,t in ipairs(targets) do
+		local hd=getHead(t)
 		if hd then
 			local hp=hd.Position
-			local dir=(hp-camPos).Unit
-			local ang=math.deg(math.acos(math.clamp(cam.CFrame.LookVector:Dot(dir),-1,1)))
+			local ang=angleTo(camPos,camLook,hp)
 			if ang<=bestDist then
-				local dist=(hp-camPos).Magnitude
-				if not best or dist<best then best=hp bestDist=ang end
+				local dist=(camPos-hp).Magnitude
+				if not best or dist<best then best=hp bestDist=ang bestHead=t end
 			end
 		end
 	end
 	if best then
-		local cf=CFrame.lookAt(camPos,best)
+		aimLock=bestHead
 		local alpha=1/(math.max(SET.aimSmooth,1)+1)
-		cam.CFrame=cam.CFrame:Lerp(cf,alpha)
+		cam.CFrame=cam.CFrame:Lerp(CFrame.lookAt(camPos,best),alpha)
 	end
 end)
 
