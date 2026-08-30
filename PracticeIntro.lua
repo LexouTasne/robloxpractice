@@ -257,22 +257,26 @@ local function refreshESP()
 	end
 end
 
--- Fly (via CFrame no HumanoidRootPart - confiavel em executores)
-local flyState=false
-local flyY=0
+-- Fly (via BodyVelocity + gravidade desligada - levita e se move por impulso)
+local flyBody=nil
+local function ensureFlyBody(root)
+	if flyBody and flyBody.Parent==root then return end
+	if flyBody then flyBody:Destroy() end
+	flyBody=Instance.new("BodyVelocity")
+	flyBody.MaxForce=Vector3.new(9e9,9e9,9e9)
+	flyBody.Velocity=Vector3.zero
+	flyBody.Parent=root
+	-- descola do chao na ativacao para o personagem levitar
+	root.AssemblyLinearVelocity=Vector3.new(root.AssemblyLinearVelocity.X,20,root.AssemblyLinearVelocity.Z)
+end
 local function toggleFly(on)
-	flyState=on
 	if not on then
+		if flyBody then flyBody:Destroy() flyBody=nil end
 		local char=player.Character
 		local h=char and char:FindFirstChildOfClass("Humanoid")
 		if h then
 			h:SetStateEnabled(Enum.HumanoidStateType.Falling,true)
 			h:SetStateEnabled(Enum.HumanoidStateType.Jumping,true)
-		end
-		local root=char and char:FindFirstChild("HumanoidRootPart")
-		if root then
-			local ass=root:FindFirstChildOfClass("BodyVelocity")
-			if ass then ass:Destroy() end
 		end
 	end
 end
@@ -292,6 +296,7 @@ RunService.Heartbeat:Connect(function()
 	local humanoid=char and char:FindFirstChildOfClass("Humanoid")
 	local root=char and char:FindFirstChild("HumanoidRootPart")
 	if SET.flyEnabled and root and humanoid then
+		ensureFlyBody(root)
 		humanoid:SetStateEnabled(Enum.HumanoidStateType.Falling,false)
 		humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping,false)
 		local up=0
@@ -307,16 +312,13 @@ RunService.Heartbeat:Connect(function()
 		hz=Vector3.new(hz.X,0,hz.Z).Unit
 		if UserInputService:IsKeyDown(Enum.KeyCode.A) then mv=mv-hz end
 		if UserInputService:IsKeyDown(Enum.KeyCode.D) then mv=mv+hz end
-		local step=SET.flySpeed/60
-		local move=mv.Unit*step
-		root.CFrame=root.CFrame+(move+Vector3.new(0,up*step,0))
-		if humanoid:GetState()==Enum.HumanoidStateType.Seated then humanoid:ChangeState(Enum.HumanoidStateType.Running) end
-	elseif flyState then
+		flyBody.Velocity=(mv*SET.flySpeed)+Vector3.new(0,up*SET.flySpeed,0)
+	elseif flyBody and flyBody.Parent and flyBody.Parent.Parent==char then
+		flyBody:Destroy() flyBody=nil
 		if humanoid then
 			humanoid:SetStateEnabled(Enum.HumanoidStateType.Falling,true)
 			humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping,true)
 		end
-		flyState=false
 	end
 	if SET.noclipEnabled and char and humanoid then noclipping(char) end
 end)
