@@ -110,6 +110,25 @@ N("TextLabel",{Parent=top,Position=UDim2.fromOffset(18,0),Size=UDim2.fromOffset(
 local close=N("TextButton",{Parent=top,AnchorPoint=Vector2.new(1,.5),Position=UDim2.new(1,-15,.5,0),Size=UDim2.fromOffset(28,28),BackgroundTransparency=1,Text="×",Font=Enum.Font.Gotham,TextSize=21,TextColor3=Color3.fromRGB(145,145,155)})
 close.MouseButton1Click:Connect(function()gui:Destroy()end)
 
+-- Minimizar para botao flutuante
+local minBtn=N("TextButton",{Parent=top,AnchorPoint=Vector2.new(1,.5),Position=UDim2.new(1,-51,.5,0),Size=UDim2.fromOffset(28,28),BackgroundTransparency=1,Text="–",Font=Enum.Font.Gotham,TextSize=21,TextColor3=Color3.fromRGB(145,145,155)})
+local floatBtn=N("TextButton",{Parent=gui,AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-22,1,-22),Size=UDim2.fromOffset(52,52),BackgroundColor3=Color3.fromRGB(21,21,25),BorderSizePixel=0,Text="P+",Font=Enum.Font.GothamBlack,TextSize=18,TextColor3=W,Visible=false})
+R(floatBtn,26)N("UIStroke",{Parent=floatBtn,Color=BD,Transparency=.3,Thickness=1})
+local function minimize()
+	Q(win,D(.15),{GroupTransparency=1},Enum.EasingStyle.Quad)
+	task.wait(D(.15))
+	win.Visible=false
+	floatBtn.Visible=true
+	Q(floatBtn,D(.1),{BackgroundColor3=Color3.fromRGB(37,41,56)})
+end
+local function restore()
+	floatBtn.Visible=false
+	win.Visible=true
+	Q(win,D(.15),{GroupTransparency=0},Enum.EasingStyle.Quad)
+end
+minBtn.MouseButton1Click:Connect(minimize)
+floatBtn.MouseButton1Click:Connect(restore)
+
 local side=N("Frame",{Parent=menu,Position=UDim2.fromOffset(0,50),Size=UDim2.new(0,145,1,-50),BackgroundColor3=Color3.fromRGB(14,14,17),BorderSizePixel=0})
 N("Frame",{Parent=side,AnchorPoint=Vector2.new(1,0),Position=UDim2.fromScale(1,0),Size=UDim2.new(0,1,1,0),BackgroundColor3=BD,BackgroundTransparency=.4,BorderSizePixel=0})
 
@@ -237,23 +256,23 @@ local function refreshESP()
 	end
 end
 
--- Fly
-local flyBody=nil
-local function refreshFlyBody(root)
-	if flyBody and flyBody.Parent==root then return end
-	if flyBody then flyBody:Destroy() end
-	flyBody=Instance.new("BodyVelocity")
-	flyBody.MaxForce=Vector3.new(9e9,9e9,9e9)
-	flyBody.Velocity=Vector3.zero
-	flyBody.Parent=root
-end
+-- Fly (via CFrame no HumanoidRootPart - confiavel em executores)
+local flyState=false
+local flyY=0
 local function toggleFly(on)
-	local char=player.Character
-	if on then
+	flyState=on
+	if not on then
+		local char=player.Character
+		local h=char and char:FindFirstChildOfClass("Humanoid")
+		if h then
+			h:SetStateEnabled(Enum.HumanoidStateType.Falling,true)
+			h:SetStateEnabled(Enum.HumanoidStateType.Jumping,true)
+		end
 		local root=char and char:FindFirstChild("HumanoidRootPart")
-		if root then refreshFlyBody(root) end
-	else
-		if flyBody then flyBody:Destroy() flyBody=nil end
+		if root then
+			local ass=root:FindFirstChildOfClass("BodyVelocity")
+			if ass then ass:Destroy() end
+		end
 	end
 end
 
@@ -272,7 +291,6 @@ RunService.Heartbeat:Connect(function()
 	local humanoid=char and char:FindFirstChildOfClass("Humanoid")
 	local root=char and char:FindFirstChild("HumanoidRootPart")
 	if SET.flyEnabled and root and humanoid then
-		refreshFlyBody(root)
 		humanoid:SetStateEnabled(Enum.HumanoidStateType.Falling,false)
 		humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping,false)
 		local up=0
@@ -280,20 +298,24 @@ RunService.Heartbeat:Connect(function()
 		if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then up=-1 end
 		local cam=workspace.CurrentCamera
 		local camDir=cam and cam.CFrame:VectorToWorldSpace(Vector3.new(0,0,-1)) or root.CFrame.LookVector
-		local f2d=Vector3.new(camDir.X,0,camDir.Z).Unit*SET.flySpeed
+		local f2d=Vector3.new(camDir.X,0,camDir.Z).Unit
 		local mv=Vector3.zero
 		if UserInputService:IsKeyDown(Enum.KeyCode.W) then mv=mv+f2d end
 		if UserInputService:IsKeyDown(Enum.KeyCode.S) then mv=mv-f2d end
 		local hz=root.CFrame.RightVector
-		if UserInputService:IsKeyDown(Enum.KeyCode.A) then mv=mv-hz*SET.flySpeed end
-		if UserInputService:IsKeyDown(Enum.KeyCode.D) then mv=mv+hz*SET.flySpeed end
-		flyBody.Velocity=(mv*SET.flySpeed)+Vector3.new(0,up*SET.flySpeed,0)
-	elseif flyBody and flyBody.Parent and flyBody.Parent.Parent==char then
-		flyBody:Destroy() flyBody=nil
+		hz=Vector3.new(hz.X,0,hz.Z).Unit
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) then mv=mv-hz end
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) then mv=mv+hz end
+		local step=SET.flySpeed/60
+		local move=mv.Unit*step
+		root.CFrame=root.CFrame+(move+Vector3.new(0,up*step,0))
+		if humanoid:GetState()==Enum.HumanoidStateType.Seated then humanoid:ChangeState(Enum.HumanoidStateType.Running) end
+	elseif flyState then
 		if humanoid then
 			humanoid:SetStateEnabled(Enum.HumanoidStateType.Falling,true)
 			humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping,true)
 		end
+		flyState=false
 	end
 	if SET.noclipEnabled and char and humanoid then noclipping(char) end
 end)
@@ -329,10 +351,6 @@ end)
 -- Reaplica apos respawn
 player.CharacterAdded:Connect(function()
 	if SET.noclipEnabled then noclipping() end
-	if SET.flyEnabled then
-		local root=player.Character and player.Character:WaitForChild("HumanoidRootPart",5)
-		if root then refreshFlyBody(root) end
-	end
 	if SET.espEnabled then refreshESP() end
 end)
 P.PlayerAdded:Connect(function(pl) pl.CharacterAdded:Connect(function() if SET.espEnabled then refreshESP() end end) end)
