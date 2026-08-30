@@ -155,6 +155,7 @@ local SET = {
 	walkSpeed         = 16,
 	jumpPower         = 50,
 	noFallDamage      = false,
+	godMode           = false,
 	hitboxExpand      = false,
 	hitboxSize        = 1.5,
 	antiAfk           = false,
@@ -479,6 +480,12 @@ RunService.Heartbeat:Connect(function()
 	if SET.noFallDamage then
 		pcall(function() humanoid:SetStateEnabled(S_FALL,true) end)
 	end
+	if SET.godMode then
+		pcall(function()
+			local max=humanoid.MaxHealth
+			if humanoid.Health<max then humanoid.Health=max end
+		end)
+	end
 end)
 
 -- Hitbox expandido (HumanoidRootPart maior p/ acertar com mais facilidade)
@@ -587,6 +594,7 @@ mkSlider(pframe,y,"Suavidade do Aimbot",1,30,0,"",SET.aimSmooth,function(v) SET.
 
 mkSlider(pframe,y,"Forca do pulo",20,200,0,"",SET.jumpPower,function(v) SET.jumpPower=v end) y=y+84
 local noFallTog=mkToggle(pframe,y,"Sem dano de queda","Nao toma dano ao cair",function(on) SET.noFallDamage=on end) y=y+58
+local godTog=mkToggle(pframe,y,"God Mode","Imortal: nao toma dano nem morre",function(on) SET.godMode=on end) y=y+58
 local hitboxTog=mkToggle(pframe,y,"Hitbox expandido","Inimigos com partes maiores",function(on) SET.hitboxExpand=on end) y=y+58
 mkSlider(pframe,y,"Tamanho do Hitbox",1.2,3,1,"x",SET.hitboxSize,function(v) SET.hitboxSize=v end) y=y+84
 
@@ -634,8 +642,8 @@ sy=sy+58
 local resetBtn=N("TextButton",{Parent=sframe,Position=UDim2.fromOffset(14,sy),Size=UDim2.new(1,-28,0,46),BackgroundColor3=Color3.fromRGB(120,45,45),BorderSizePixel=0,Text="Resetar todas as configs",Font=Enum.Font.GothamBold,TextSize=13,TextColor3=W})
 R(resetBtn,8)
 resetBtn.MouseButton1Click:Connect(function()
-	for _,t in ipairs({espTog,aimTog,noFallTog,hitboxTog,flyTog,noclipTog,espColTog,espNamesTog,espTracersTog,espBoxesTog,espSelfTog,antiAfkTog}) do t.set(false) end
-	SET.aimFOV=150 SET.aimSmooth=4 SET.flySpeed=50 SET.walkSpeed=16 SET.jumpPower=50 SET.hitboxSize=1.5 SET.zoomFOV=0
+	for _,t in ipairs({espTog,aimTog,noFallTog,godTog,hitboxTog,flyTog,noclipTog,espColTog,espNamesTog,espTracersTog,espBoxesTog,espSelfTog,antiAfkTog}) do t.set(false) end
+	SET.aimFOV=150 SET.aimSmooth=4 SET.flySpeed=50 SET.walkSpeed=16 SET.jumpPower=50 SET.hitboxSize=1.5 SET.zoomFOV=0 SET.godMode=false
 	SET.espColor=Color3.fromRGB(235,70,70)
 	SET.espEnabled=false
 	setState(player.Character and player.Character:FindFirstChildOfClass("Humanoid"),S_FALL,true)
