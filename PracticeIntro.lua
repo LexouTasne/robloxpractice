@@ -147,8 +147,6 @@ local SET = {
 	espShowSelf       = false,
 	espColor          = Color3.fromRGB(235,70,70),
 	aimbotEnabled     = false,
-	aimOnRightClick   = false,
-	aimPart           = "Head",
 	aimFOV            = 150,
 	aimSmooth         = 4,
 	flyEnabled        = false,
@@ -538,27 +536,18 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- Aimbot (segue a mira: gruda em quem voce apontar e troca ao mirar em outro)
-local mbDown=false
-UserInputService.InputBegan:Connect(function(i,g)
-	if i.UserInputType==Enum.UserInputType.MouseButton2 then mbDown=true end
-end)
-UserInputService.InputEnded:Connect(function(i)
-	if i.UserInputType==Enum.UserInputType.MouseButton2 then mbDown=false end
-end)
 RunService.RenderStepped:Connect(function()
 	if not SET.aimbotEnabled then return end
-	if SET.aimOnRightClick and not mbDown then return end
 	local cam=workspace.CurrentCamera
 	local char=player.Character
 	local root=char and char:FindFirstChild("HumanoidRootPart")
 	if not (cam and root) then return end
 	local camPos=cam.CFrame.Position
 	local camLook=cam.CFrame.LookVector
-	local partName=SET.aimPart
 	local best,bestAng=nil,SET.aimFOV
 	for _,t in ipairs(getTargets()) do
 		if t==char then continue end
-		local hd=t:FindFirstChild(partName) or t:FindFirstChild("Head") or t.PrimaryPart
+		local hd=t:FindFirstChild("Head") or t.PrimaryPart
 		if hd then
 			local hp=hd.Position
 			local dir=(hp-camPos).Unit
@@ -600,8 +589,6 @@ N("TextLabel",{Parent=pframe,Position=UDim2.fromOffset(14,42),Size=UDim2.new(1,-
 
 local y=72
 local aimTog=mkToggle(pframe,y,"Aimbot","Aponta a cam para o inimigo mais proximo",function(on) SET.aimbotEnabled=on end) y=y+58
-local aimClick=mkToggle(pframe,y,"Aimbot so no botao direito","Mira so enquanto segura o botao direito",function(on) SET.aimOnRightClick=on end) y=y+58
-local aimModeTog=mkToggle(pframe,y,"Aimbot no corpo","Desligado: mira na cabeca; Ligado: no corpo",function(on) SET.aimPart=on and "HumanoidRootPart" or "Head" end) y=y+58
 mkSlider(pframe,y,"FOV do Aimbot",30,360,0,"graus",SET.aimFOV,function(v) SET.aimFOV=v end) y=y+84
 mkSlider(pframe,y,"Suavidade do Aimbot",1,30,0,"",SET.aimSmooth,function(v) SET.aimSmooth=math.round(v) end) y=y+84
 
@@ -657,8 +644,8 @@ sy=sy+58
 local resetBtn=N("TextButton",{Parent=sframe,Position=UDim2.fromOffset(14,sy),Size=UDim2.new(1,-28,0,46),BackgroundColor3=Color3.fromRGB(120,45,45),BorderSizePixel=0,Text="Resetar todas as configs",Font=Enum.Font.GothamBold,TextSize=13,TextColor3=W})
 R(resetBtn,8)
 resetBtn.MouseButton1Click:Connect(function()
-	for _,t in ipairs({espTog,aimTog,aimClick,aimModeTog,sprintTog,infJumpTog,noFallTog,hitboxTog,flyTog,noclipTog,espColTog,espNamesTog,espTracersTog,espBoxesTog,espSelfTog,antiAfkTog}) do t.set(false) end
-	SET.aimFOV=150 SET.aimSmooth=4 SET.flySpeed=50 SET.walkSpeed=16 SET.jumpPower=50 SET.hitboxSize=1.5 SET.zoomFOV=0 SET.aimPart="Head"
+	for _,t in ipairs({espTog,aimTog,sprintTog,infJumpTog,noFallTog,hitboxTog,flyTog,noclipTog,espColTog,espNamesTog,espTracersTog,espBoxesTog,espSelfTog,antiAfkTog}) do t.set(false) end
+	SET.aimFOV=150 SET.aimSmooth=4 SET.flySpeed=50 SET.walkSpeed=16 SET.jumpPower=50 SET.hitboxSize=1.5 SET.zoomFOV=0
 	SET.espColor=Color3.fromRGB(235,70,70)
 	SET.espEnabled=false
 	setState(player.Character and player.Character:FindFirstChildOfClass("Humanoid"),S_FALL,true)
