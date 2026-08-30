@@ -347,10 +347,14 @@ end
 
 -- Tracers: linhas da tela ate o alvo
 local tracerLines={}
+local tracerLabels={}
 local DrawingOK=pcall(function() local d=Drawing.new("Line") d:Destroy() return true end)
+local DrawingTextOK=pcall(function() local d=Drawing.new("Text") d:Destroy() return true end)
 local function clearTracers()
 	for _,l in pairs(tracerLines) do if l then pcall(function() l:Destroy() end) end end
 	tracerLines={}
+	for _,t in pairs(tracerLabels) do if t then pcall(function() t:Destroy() end) end end
+	tracerLabels={}
 end
 RunService.RenderStepped:Connect(function()
 	if DrawingOK and SET.espEnabled and SET.espTracers then
@@ -378,6 +382,25 @@ RunService.RenderStepped:Connect(function()
 					local screen,vis=cam:WorldToViewportPoint(sp)
 					line.From=p2
 					line.To=Vector2.new(screen.X,screen.Y)
+					local lbl=tracerLabels[idx]
+					if not lbl and DrawingTextOK then
+						local ok,l2=pcall(function()
+							local d=Drawing.new("Text")
+							d.Size=14
+							d.Center=true
+							d.Outline=true
+							d.OutlineColor=Color3.new(0,0,0)
+							d.Color=col
+							return d
+						end)
+						if ok and l2 then lbl=l2 tracerLabels[idx]=l2 end
+					end
+					if lbl then
+						lbl.Visible=vis
+						lbl.Text=math.floor((sp-cs).Magnitude).." studs"
+						lbl.Position=Vector2.new(screen.X,screen.Y-16)
+						lbl.Color=col
+					end
 					idx=idx+1
 				end
 			end
@@ -385,6 +408,10 @@ RunService.RenderStepped:Connect(function()
 		for i=idx,#tracerLines do
 			local l=tracerLines[i]
 			if l then l.Visible=false end
+		end
+		for i=idx,#tracerLabels do
+			local t=tracerLabels[i]
+			if t then t.Visible=false end
 		end
 	else
 		for _,l in pairs(tracerLines) do if l then l.Visible=false end end
