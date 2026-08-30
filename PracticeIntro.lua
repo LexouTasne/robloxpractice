@@ -538,9 +538,16 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- Aimbot (segue a mira: gruda em quem voce apontar e troca ao mirar em outro)
+local mbDown=false
+UserInputService.InputBegan:Connect(function(i,g)
+	if i.UserInputType==Enum.UserInputType.MouseButton2 then mbDown=true end
+end)
+UserInputService.InputEnded:Connect(function(i)
+	if i.UserInputType==Enum.UserInputType.MouseButton2 then mbDown=false end
+end)
 RunService.RenderStepped:Connect(function()
 	if not SET.aimbotEnabled then return end
-	if SET.aimOnRightClick and not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then return end
+	if SET.aimOnRightClick and not mbDown then return end
 	local cam=workspace.CurrentCamera
 	local char=player.Character
 	local root=char and char:FindFirstChild("HumanoidRootPart")
