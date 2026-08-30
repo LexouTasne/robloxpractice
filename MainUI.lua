@@ -45,6 +45,20 @@ local settings = {
 	jpValue = DEFAULT_JUMPPOWER,
 	fovValue = 70,
 	infiniteJump = false,
+
+	espEnabled = false,
+	espTeamColor = true,
+	aimbotEnabled = false,
+	aimFOV = 150,
+	aimSmooth = 4,
+	flyEnabled = false,
+	flySpeed = 50,
+	noclipEnabled = false,
+}
+
+-- Alvos (nao-jogadores) para ESP/Aimbot: cavalos, inimigos, etc.
+local ESP_TARGETS = {
+	Workspace = { "Zombie", "Zombies", "Creeper" },
 }
 
 ---------------------------------------------------------------------------
@@ -612,9 +626,11 @@ local function createUI()
 	local mainPanel = makePanel()
 	local jumpPanel = makePanel()
 	local speedPanel = makePanel()
+	local playerPanel = makePanel()
 	panels.main = mainPanel
 	panels.jump = jumpPanel
 	panels.speed = speedPanel
+	panels.player = playerPanel
 
 	-- === ABA MAIN ===
 	addSectionTitle(mainPanel, "GERAL", 1)
@@ -702,6 +718,45 @@ local function createUI()
 		end
 	end, 3)
 
+	-- === ABA JOGADOR ===
+	addSectionTitle(playerPanel, "JOGADOR", 1)
+
+	-- ESP
+	espToggle = addToggle(playerPanel, "ESP", "Destaca outros jogadores no mapa", 2, function(on)
+		settings.espEnabled = on
+		refreshESP()
+	end)
+	addToggle(playerPanel, "ESP por cor da equipe", "Usa a cor da equipe (ou vermelho)", 3, function(on)
+		settings.espTeamColor = on
+		refreshESP()
+	end)
+
+	-- Aimbot
+	aimToggle = addToggle(playerPanel, "Aimbot", "Aponta a cam para o inimigo mais proximo", 4, function(on)
+		settings.aimbotEnabled = on
+	end)
+	aimFOVSlider = addSlider(playerPanel, "FOV do Aimbot (graus)", 30, 360, 0, "graus", settings.aimFOV, function(value)
+		settings.aimFOV = value
+	end, 5)
+	aimSmoothSlider = addSlider(playerPanel, "Suavidade (quanto menor, mais rapido)", 1, 30, 1, "", settings.aimSmooth, function(value)
+		settings.aimSmooth = math.round(value)
+	end, 6)
+
+	-- Fly
+	flyToggle = addToggle(playerPanel, "Fly", "Voe mantendo a tecla Espaco", 7, function(on)
+		settings.flyEnabled = on
+		toggleFly(on)
+	end)
+	flySpeedSlider = addSlider(playerPanel, "Velocidade do Fly", 10, 200, 0, "studs/s", settings.flySpeed, function(value)
+		settings.flySpeed = value
+		if flyBody then flyBody.MaxForce = Vector3.new(9e9, 9e9, 9e9) end
+	end, 8)
+
+	-- Noclip
+	noclipToggle = addToggle(playerPanel, "Noclip", "Atravessa paredes", 9, function(on)
+		settings.noclipEnabled = on
+	end)
+
 	-------------------------------------------------------------
 	-- 6. MONTAGEM DAS ABAS + ESTILO DE BOTAO ATIVO
 	-------------------------------------------------------------
@@ -733,6 +788,7 @@ local function createUI()
 	addTab("Main", 1, mainPanel)
 	addTab("Pulo", 2, jumpPanel)
 	addTab("Velocidade", 3, speedPanel)
+	addTab("Jogador", 4, playerPanel)
 
 	-- Abre na aba Main
 	switchPanel(mainPanel)
@@ -824,6 +880,224 @@ local function createUI()
 		end
 	end)
 end
+
+---------------------------------------------------------------------------
+-- LOGICA: ESP / AIMBOT / FLY / NOCLIP
+---Digital (funcoes globais chamadas pelos callbacks da GUI)
+---------------------------------------------------------------------------
+
+-- Ajuda: retorna a lista de personagens-alvo (outros jogadores + inimigos)
+local function getTargets()
+	local targets = {}
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p ~= player and p.Character and p.Character.PrimaryPart then
+			table.insert(targets, p.Character)
+		end
+	end
+	-- Inimigos do workspace (cavalos, etc.)
+	for _, folderName in pairs(ESP_TARGETS.Workspace) do
+		local folder = workspace:FindFirstChild(folderName)
+		if folder then
+			for _, child in ipairs(folder:GetChildren()) do
+				if child:IsA("Model") and child.PrimaryPart then
+					table.insert(targets, child)
+				end
+			end
+		end
+	end
+	return targets
+end
+
+-- ESP: cria/destroi Highlights nos alvos
+espHighlights = {}
+
+function refreshESP()
+	for _, hl in pairs(espHighlights) do
+		if hl and hl.Parent then
+			hl:Destroy()
+		end
+	end
+	espHighlights = {}
+
+	if not settings.espEnabled then
+		return
+	end
+
+	for _, char in ipairs(getTargets()) do
+		local existing = char:FindFirstChildOfClass("Highlight")
+		if not existing then
+			local hl = Instance.new("Highlight")
+			hl.Name = "ESP_Highlight"
+			local team = (not settings.espTeamColor) and player.Team
+			hl.FillColor = (team and team.TeamColor.Color) or Color3.fromRGB(235, 70, 70)
+			hl.OutlineColor = Color3.new(0, 0, 0)
+			hl.FillTransparency = 0.4
+			hl.OutlineTransparency = 0.3
+			hl.Parent = char
+			espHighlights[char] = hl
+		end
+	end
+end
+
+-- Mantem o ESP atualizado quando novos personagens aparecem
+Players.PlayerAdded:Connect(function(p)
+	p.CharacterAdded:Connect(function()
+		if settings.espEnabled then
+			refreshESP()
+		end
+	end)
+end)
+
+-- FLY: usa um BodyVelocity para voar enquanto segura Espaco
+flyBody = nil
+
+function refreshFlyBody(root)
+	if flyBody and flyBody.Parent == root then
+		return
+	end
+	if flyBody then
+		flyBody:Destroy()
+	end
+	flyBody = Instance.new("BodyVelocity")
+	flyBody.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+	flyBody.Velocity = Vector3.zero
+	flyBody.Parent = root
+end
+
+function toggleFly(on)
+	local char = player.Character
+	if on then
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		if root then
+			refreshFlyBody(root)
+		end
+	else
+		if flyBody then
+			flyBody:Destroy()
+			flyBody = nil
+		end
+	end
+end
+
+-- NOCLIP: desliga a colisao do personagem periodicamente
+local function noclipping(character)
+	character = character or player.Character
+	if not character then return end
+	for _, part in ipairs(character:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CanCollide = false
+		end
+	end
+end
+
+-- LOOP PRINCIPAL (heartbeat): Fly, Noclip e Aimbot
+local RunService = game:GetService("RunService")
+
+RunService.Heartbeat:Connect(function()
+	local char = player.Character
+	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+
+	-- FLY: mantem o corpo flutuando enquanto segura Espaco (e desce com Shift)
+	if settings.flyEnabled and root and humanoid then
+		refreshFlyBody(root)
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Falling, false)
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+
+		local up = 0
+		local forward = 0
+		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then up = 1 end
+		if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then up = -1 end
+		local cam = workspace.CurrentCamera
+		local camDir = cam and cam.CFrame:VectorToWorldSpace(Vector3.new(0, 0, -1)) or root.CFrame.LookVector
+		local forward2d = Vector3.new(camDir.X, 0, camDir.Z).Unit * settings.flySpeed
+
+		local moveDir = Vector3.zero
+		if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + forward2d end
+		if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - forward2d end
+
+		local horiz = root.CFrame.RightVector
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - horiz * settings.flySpeed end
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + horiz * settings.flySpeed end
+
+		flyBody.Velocity = (moveDir * settings.flySpeed) + Vector3.new(0, up * settings.flySpeed, 0)
+	elseif flyBody and flyBody.Parent and flyBody.Parent.Parent == char then
+		flyBody:Destroy()
+		flyBody = nil
+		if humanoid then
+			humanoid:SetStateEnabled(Enum.HumanoidStateType.Falling, true)
+			humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+		end
+	end
+
+	-- NOCLIP
+	if settings.noclipEnabled and char and humanoid then
+		noclipping(char)
+	end
+end)
+
+-- NOCLIP: continuar apos respawn
+player.CharacterAdded:Connect(function(char)
+	if settings.noclipEnabled then
+		noclipping(char)
+	end
+end)
+
+-- FLY: recria o BodyVelocity apos respawn
+player.CharacterAdded:Connect(function(char)
+	if settings.flyEnabled then
+		local root = char:WaitForChild("HumanoidRootPart", 5)
+		if root then
+			refreshFlyBody(root)
+		end
+	end
+end)
+
+-- AIMBOT: gira a cam para o alvo mais proximo dentro do FOV
+RunService.RenderStepped:Connect(function()
+	if not settings.aimbotEnabled then return end
+	local cam = workspace.CurrentCamera
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not (cam and root) then return end
+
+	local camPos = cam.CFrame.Position
+	local best = nil
+	local bestDist = settings.aimFOV
+
+	for _, target in ipairs(getTargets()) do
+		local head = target:FindFirstChild("Head") or target.PrimaryPart
+		if head then
+			local hp = head.Position
+			local dir = (hp - camPos).Unit
+			local dot = cam.CFrame.LookVector:Dot(dir)
+			local angle = math.deg(math.acos(math.clamp(dot, -1, 1)))
+			if angle <= bestDist then
+				local dist = (hp - camPos).Magnitude
+				if not best or dist < best then
+					best = hp
+					bestDist = angle
+				end
+			end
+		end
+	end
+
+	if best then
+		local cframe = CFrame.lookAt(camPos, best)
+		local current = cam.CFrame
+		local smooth = math.max(settings.aimSmooth, 1)
+		local alpha = 1 / (smooth + 1)
+		local interp = current:Lerp(cframe, alpha)
+		cam.CFrame = interp
+	end
+end)
+
+-- Recompor o ESP/estado apos respawn (ensures settings persistem)
+player.CharacterAdded:Connect(function()
+	if settings.espEnabled then
+		refreshESP()
+	end
+end)
 
 -- Executa a construcao capturando qualquer erro (aparece no Output)
 local okCreate, createErr = pcall(createUI)
