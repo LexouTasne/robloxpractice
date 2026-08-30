@@ -107,19 +107,20 @@ local top=N("Frame",{Parent=menu,Size=UDim2.new(1,0,0,50),BackgroundColor3=Color
 N("Frame",{Parent=top,Position=UDim2.new(0,0,1,-10),Size=UDim2.new(1,0,0,10),BackgroundColor3=top.BackgroundColor3,BorderSizePixel=0})
 N("TextLabel",{Parent=top,Position=UDim2.fromOffset(18,0),Size=UDim2.fromOffset(180,50),BackgroundTransparency=1,Text="Practice+",Font=FONT,TextSize=17,TextColor3=W,TextXAlignment=Enum.TextXAlignment.Left})
 
-local close=N("TextButton",{Parent=top,AnchorPoint=Vector2.new(1,.5),Position=UDim2.new(1,-15,.5,0),Size=UDim2.fromOffset(28,28),BackgroundTransparency=1,Text="×",Font=Enum.Font.Gotham,TextSize=21,TextColor3=Color3.fromRGB(145,145,155)})
+local close=N("TextButton",{Parent=top,AnchorPoint=Vector2.new(1,.5),Position=UDim2.new(1,-15,.5,0),Size=UDim2.fromOffset(28,28),BackgroundColor3=Color3.fromRGB(30,30,35),BorderSizePixel=0,Text="X",Font=Enum.Font.GothamBold,TextSize=15,TextColor3=Color3.fromRGB(200,80,80)})
+R(close,7)
 close.MouseButton1Click:Connect(function()gui:Destroy()end)
 
 -- Minimizar para botao flutuante
-local minBtn=N("TextButton",{Parent=top,AnchorPoint=Vector2.new(1,.5),Position=UDim2.new(1,-51,.5,0),Size=UDim2.fromOffset(28,28),BackgroundTransparency=1,Text="–",Font=Enum.Font.Gotham,TextSize=21,TextColor3=Color3.fromRGB(145,145,155)})
-local floatBtn=N("TextButton",{Parent=gui,AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-22,1,-22),Size=UDim2.fromOffset(52,52),BackgroundColor3=Color3.fromRGB(21,21,25),BorderSizePixel=0,Text="P+",Font=Enum.Font.GothamBlack,TextSize=18,TextColor3=W,Visible=false})
-R(floatBtn,26)N("UIStroke",{Parent=floatBtn,Color=BD,Transparency=.3,Thickness=1})
+local minBtn=N("TextButton",{Parent=top,AnchorPoint=Vector2.new(1,.5),Position=UDim2.new(1,-51,.5,0),Size=UDim2.fromOffset(28,28),BackgroundColor3=Color3.fromRGB(30,30,35),BorderSizePixel=0,Text="-",Font=Enum.Font.GothamBold,TextSize=17,TextColor3=W})
+R(minBtn,7)
+local floatBtn=N("TextButton",{Parent=gui,AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-22,1,-22),Size=UDim2.fromOffset(52,52),BackgroundColor3=Color3.fromRGB(37,41,56),BorderSizePixel=0,Text="P+",Font=Enum.Font.GothamBlack,TextSize=18,TextColor3=W,Visible=false,ZIndex=999999})
+R(floatBtn,26)N("UIStroke",{Parent=floatBtn,Color=W,Transparency=.3,Thickness=1})
 local function minimize()
 	Q(win,D(.15),{GroupTransparency=1},Enum.EasingStyle.Quad)
 	task.wait(D(.15))
 	win.Visible=false
 	floatBtn.Visible=true
-	Q(floatBtn,D(.1),{BackgroundColor3=Color3.fromRGB(37,41,56)})
 end
 local function restore()
 	floatBtn.Visible=false
