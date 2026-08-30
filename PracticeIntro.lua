@@ -289,7 +289,7 @@ local function refreshESP()
 	if not SET.espEnabled then return end
 	local baseColor=SET.espColor
 	for _,char in ipairs(getTargets()) do
-		if SET.espShowSelf or char~=player.Character then
+		if (char==player.Character and SET.espShowSelf) or (char~=player.Character and isEnemy(char)) then
 			local color=espColorFor(char,baseColor)
 			if not char:FindFirstChildOfClass("Highlight") then
 				local hl=Instance.new("Highlight")
@@ -357,7 +357,7 @@ RunService.RenderStepped:Connect(function()
 		local cs,rs=cam.CFrame.Position,cam.ViewportSize
 		local idx=0
 		for _,char in ipairs(getTargets()) do
-			if SET.espShowSelf or char~=player.Character then
+			if (char==player.Character and SET.espShowSelf) or (char~=player.Character and isEnemy(char)) then
 				local pt=char.PrimaryPart or char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
 				if pt then
 					local sp=pt.Position
