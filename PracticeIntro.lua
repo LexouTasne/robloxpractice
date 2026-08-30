@@ -538,6 +538,7 @@ RunService.RenderStepped:Connect(function()
 	local best,bestAng=nil,SET.aimFOV
 	for _,t in ipairs(getTargets()) do
 		if t==char then continue end
+		if not isEnemy(t) then continue end
 		local hd=t:FindFirstChild("Head") or t.PrimaryPart
 		if hd then
 			local hp=hd.Position
