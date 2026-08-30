@@ -154,7 +154,6 @@ local SET = {
 	noclipEnabled     = false,
 	walkSpeed         = 16,
 	jumpPower         = 50,
-	infiniteJump      = false,
 	noFallDamage      = false,
 	hitboxExpand      = false,
 	hitboxSize        = 1.5,
@@ -413,8 +412,6 @@ local function ensureFlyBody(root)
 	flyBody.MaxForce=Vector3.new(9e9,9e9,9e9)
 	flyBody.Velocity=Vector3.zero
 	flyBody.Parent=root
-	-- descola do chao na ativacao para o personagem levitar
-	root.AssemblyLinearVelocity=Vector3.new(root.AssemblyLinearVelocity.X,20,root.AssemblyLinearVelocity.Z)
 end
 local function toggleFly(on)
 	if not on then
@@ -478,10 +475,6 @@ RunService.Heartbeat:Connect(function()
 	if not humanoid then return end
 	pcall(function() humanoid.WalkSpeed=SET.walkSpeed end)
 	pcall(function() humanoid.JumpPower=SET.jumpPower end)
-	if SET.infiniteJump and UserInputService:IsKeyDown(Enum.KeyCode.Space) and S_FALL and humanoid:GetState()==S_FALL then
-		pcall(function() humanoid:ChangeState(Enum.HumanoidStateType.Seated) end)
-		pcall(function() humanoid:ChangeState(Enum.HumanoidStateType.Running) end)
-	end
 	if SET.noFallDamage then
 		pcall(function() humanoid:SetStateEnabled(S_FALL,true) end)
 	end
@@ -590,12 +583,7 @@ local aimTog=mkToggle(pframe,y,"Aimbot","Aponta a cam para o inimigo mais proxim
 mkSlider(pframe,y,"FOV do Aimbot",30,360,0,"graus",SET.aimFOV,function(v) SET.aimFOV=v end) y=y+84
 mkSlider(pframe,y,"Suavidade do Aimbot",1,30,0,"",SET.aimSmooth,function(v) SET.aimSmooth=math.round(v) end) y=y+84
 
-local speedTog=mkToggle(pframe,y,"Velocidade","Mostra o slider da velocidade da corrida",function(on) speedSlider.frame.Visible=on end) y=y+58
-local speedSlider=mkSlider(pframe,y,"Velocidade de corrida",10,120,0,"",SET.walkSpeed,function(v) SET.walkSpeed=v end)
-speedSlider.frame.Visible=false
-y=y+84
 mkSlider(pframe,y,"Forca do pulo",20,200,0,"",SET.jumpPower,function(v) SET.jumpPower=v end) y=y+84
-local infJumpTog=mkToggle(pframe,y,"Pulo infinito","Segure espaco no ar para pular de novo",function(on) SET.infiniteJump=on end) y=y+58
 local noFallTog=mkToggle(pframe,y,"Sem dano de queda","Nao toma dano ao cair",function(on) SET.noFallDamage=on end) y=y+58
 local hitboxTog=mkToggle(pframe,y,"Hitbox expandido","Inimigos com partes maiores",function(on) SET.hitboxExpand=on end) y=y+58
 mkSlider(pframe,y,"Tamanho do Hitbox",1.2,3,1,"x",SET.hitboxSize,function(v) SET.hitboxSize=v end) y=y+84
@@ -644,7 +632,7 @@ sy=sy+58
 local resetBtn=N("TextButton",{Parent=sframe,Position=UDim2.fromOffset(14,sy),Size=UDim2.new(1,-28,0,46),BackgroundColor3=Color3.fromRGB(120,45,45),BorderSizePixel=0,Text="Resetar todas as configs",Font=Enum.Font.GothamBold,TextSize=13,TextColor3=W})
 R(resetBtn,8)
 resetBtn.MouseButton1Click:Connect(function()
-	for _,t in ipairs({espTog,aimTog,speedTog,infJumpTog,noFallTog,hitboxTog,flyTog,noclipTog,espColTog,espNamesTog,espTracersTog,espBoxesTog,espSelfTog,antiAfkTog}) do t.set(false) end
+	for _,t in ipairs({espTog,aimTog,noFallTog,hitboxTog,flyTog,noclipTog,espColTog,espNamesTog,espTracersTog,espBoxesTog,espSelfTog,antiAfkTog}) do t.set(false) end
 	SET.aimFOV=150 SET.aimSmooth=4 SET.flySpeed=50 SET.walkSpeed=16 SET.jumpPower=50 SET.hitboxSize=1.5 SET.zoomFOV=0
 	SET.espColor=Color3.fromRGB(235,70,70)
 	SET.espEnabled=false
