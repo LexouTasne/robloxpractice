@@ -284,8 +284,9 @@ local function ensureFlyBody(root)
 end
 local function toggleFly(on)
 	if not on then
-		if flyBody then flyBody:Destroy() flyBody=nil end
-		local char=player.Character
+		if flyBody then pcall(function() flyBody:Destroy() end) flyBody=nil end
+		local pl=player
+		local char=pl and pl.Character
 		local h=char and char:FindFirstChildOfClass("Humanoid")
 		if h then
 			setState(h,S_FALL,true)
@@ -386,7 +387,7 @@ local espColTog=mkToggle(pframe,124,"ESP por cor da equipe","Usa a cor da equipe
 local aimTog=mkToggle(pframe,182,"Aimbot","Aponta a cam para o inimigo mais proximo",function(on) SET.aimbotEnabled=on end)
 mkSlider(pframe,240,"FOV do Aimbot (graus)",30,360,0,"graus",SET.aimFOV,function(v) SET.aimFOV=v end)
 mkSlider(pframe,324,"Suavidade do Aimbot",1,30,0,"",SET.aimSmooth,function(v) SET.aimSmooth=math.round(v) end)
-local flyTog=mkToggle(pframe,408,"Fly","Voe segurando Espaco (sobe) / Shift (desce)",function(on) SET.flyEnabled=on toggleFly(on) end)
+local flyTog=mkToggle(pframe,408,"Fly","Voe segurando Espaco (sobe) / Shift (desce)",function(on) pcall(function() SET.flyEnabled=on toggleFly(on) end) end)
 mkSlider(pframe,466,"Velocidade do Fly",10,200,0,"studs/s",SET.flySpeed,function(v) SET.flySpeed=v end)
 local noclipTog=mkToggle(pframe,550,"Noclip","Atravessa paredes",function(on) SET.noclipEnabled=on end)
 
